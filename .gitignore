@@ -1,0 +1,9 @@
+# Ignore system files
+.vscode/
+.idea/
+.DS_Store
+node_modules/
+AppData/
+Temp/
+*.log
+VirtualBox/
