@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="C:\Users\asipu\Web Develpoment\favicon.png" href="favicon.png">
+    <title>Simple Todo List</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            background-image: url('https://images.unsplash.com/photo-1518837695005-2083093ee35b?q=80&w=2000');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+
+        .todo-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08);
+            padding: 30px;
+            backdrop-filter: blur(5px);
+            width: 90%;
+            max-width: 500px;
+            margin: 20px;
+        }
+
+        .input-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        #todoInput {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background: #45a049;
+        }
+
+        #todoList {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .todo-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background: rgba(249, 249, 249, 0.9);
+            margin-bottom: 8px;
+            border-radius: 4px;
+            gap: 10px;
+            position: relative;
+        }
+
+        .todo-text {
+            flex: 1;
+        }
+
+        .todo-item.completed .todo-text {
+            text-decoration: line-through;
+            opacity: 0.7;
+        }
+
+        .delete-btn {
+            background: #ff4444;
+        }
+
+        .delete-btn:hover {
+            background: #cc0000;
+        }
+
+        input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+        }
+
+        .delete-confirm {
+            display: none;
+            position: absolute;
+            bottom: -50px; /* Adjusted for better visibility */
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.98);
+            padding: 12px; /* Increased padding */
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+            z-index: 1000;
+            gap: 8px; /* Increased gap */
+            align-items: center;
+            justify-content: center;
+            font-size: 16px; /* Increased font size */
+            white-space: nowrap;
+        }
+
+        .delete-confirm.show {
+            display: flex;
+        }
+
+        .delete-confirm span {
+            font-size: 16px; /* Increased font size */
+        }
+
+        .confirm-btn {
+            padding: 8px 12px; /* Increased padding */
+            font-size: 16px; /* Increased font size */
+        }
+
+        .confirm-yes {
+            background: #ff4444;
+        }
+
+        .confirm-yes:hover {
+            background: #cc0000;
+        }
+
+        .confirm-no {
+            background: #666;
+        }
+
+        .confirm-no:hover {
+            background: #555;
+        }
+
+        /* Scrollbar styling */
+        #todoList::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        #todoList::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
+        }
+
+        #todoList::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+        }
+
+        #todoList::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        @media (max-width: 600px) {
+            .todo-container {
+                margin: 0;
+                border-radius: 0;
+                height: 100vh;
+                max-width: 100%;
+            }
+
+            #todoList {
+                max-height: calc(100vh - 160px);
+            }
+
+            .delete-confirm {
+                position: fixed;
+                bottom: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                right: auto;
+                background: rgba(255, 255, 255, 0.98);
+                padding: 12px;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+                border-radius: 8px;
+                z-index: 1000;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="todo-container">
+        <h1>Todo List</h1>
+        <div class="input-container">
+            <input type="text" id="todoInput" placeholder="Add a new task">
+            <button onclick="addTodo()">Add</button>
+        </div>
+        <ul id="todoList"></ul>
+    </div>
+
+    <script>
+        // Load todos from localStorage when the page loads
+        let todos = JSON.parse(localStorage.getItem('todos')) || [];
+        let activeDeleteId = null;
+
+        // Render the initial todos
+        renderTodos();
+
+        // Add event listener for the Enter key
+        document.getElementById('todoInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addTodo();
+            }
+        });
+
+        // Add click event listener to handle clicking outside confirmation
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.delete-confirm') && !e.target.closest('.delete-btn')) {
+                hideAllConfirmations();
+            }
+        });
+
+        function addTodo() {
+            const input = document.getElementById('todoInput');
+            const text = input.value.trim();
+            
+            if (text) {
+                // Add new todo to the array
+                todos.push({
+                    id: Date.now(),
+                    text: text,
+                    completed: false
+                });
+                
+                // Save to localStorage
+                saveTodos();
+                
+                // Clear input
+                input.value = '';
+                
+                // Render updated list
+                renderTodos();
+            }
+        }
+
+        function toggleTodo(id) {
+            // Find and toggle the todo's completed status
+            todos = todos.map(todo => {
+                if (todo.id === id) {
+                    return { ...todo, completed: !todo.completed };
+                }
+                return todo;
+            });
+            
+            saveTodos();
+            renderTodos();
+        }
+
+        function showDeleteConfirmation(id, event) {
+            event.stopPropagation(); // Prevent document click from immediately hiding
+            hideAllConfirmations();
+            activeDeleteId = id;
+            
+            const todoItem = event.target.closest('.todo-item');
+            const confirm = todoItem.querySelector('.delete-confirm');
+            confirm.classList.add('show');
+        }
+
+        function hideAllConfirmations() {
+            document.querySelectorAll('.delete-confirm').forEach(confirm => {
+                confirm.classList.remove('show');
+            });
+            activeDeleteId = null;
+        }
+
+        function confirmDelete(confirmed) {
+            if (confirmed && activeDeleteId !== null) {
+                // Remove the todo from the array
+                todos = todos.filter(todo => todo.id !== activeDeleteId);
+                saveTodos();
+                renderTodos();
+            }
+            hideAllConfirmations();
+        }
+
+        function renderTodos() {
+            const todoList = document.getElementById('todoList');
+            todoList.innerHTML = '';
+            
+            todos.forEach(todo => {
+                const li = document.createElement('li');
+                li.className = `todo-item ${todo.completed ? 'completed' : ''}`;
+                
+                li.innerHTML = `
+                    <input type="checkbox" 
+                           ${todo.completed ? 'checked' : ''} 
+                           onchange="toggleTodo(${todo.id})">
+                    <span class="todo-text">${todo.text}</span>
+                    <button class="delete-btn" onclick="showDeleteConfirmation(${todo.id}, event)">Delete</button>
+                    <div class="delete-confirm">
+                        <span>Are you sure?</span>
+                        <button class="confirm-btn confirm-yes" onclick="confirmDelete(true)">Yes</button>
+                        <button class="confirm-btn confirm-no" onclick="confirmDelete(false)">No</button>
+                    </div>
+                `;
+                
+                todoList.appendChild(li);
+            });
+        }
+
+        function saveTodos() {
+            localStorage.setItem('todos', JSON.stringify(todos));
+        }
+    </script>
+</body>
+</html>
